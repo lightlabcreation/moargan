@@ -1,0 +1,136 @@
+// Prisma Schema for Morgan Shuttle App (MySQL Version)
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "windows", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String         @id @default(cuid())
+  name             String
+  email            String         @unique
+  role             String         // admin, driver, tenant
+  password         String?
+  password_set     Boolean        @default(false)
+  invitation_sent  Boolean        @default(false)
+  status           String         @default("ACTIVE")
+  invitation_token String?        @unique
+  token_expiry     DateTime?
+  source           String         @default("INTERNAL") // PMS, INTERNAL
+  phone            String?        // New Field
+  extra            String?        // New Field (Room/License)
+  special          String?        // New Field (Shuttle ID)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  bookings         Booking[]
+  notifications    Notification[] // Relation to notifications
+
+  @@map("user")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  body      String
+  icon      String   @default("bell")
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("notification")
+}
+
+
+model Trip {
+  id              String    @id @default(cuid())
+  time            String    // HH:mm
+  date            String    // YYYY-MM-DD
+  origin          String
+  destination     String
+  seats_total     Int       @default(7)
+  seats_remaining Int       @default(7)
+  status          String    @default("scheduled") // scheduled, completed, cancelled, in_progress
+  is_special      Boolean   @default(false)
+  is_recurring    Boolean   @default(false)
+  tenant_name     String?
+  lat               Float?    // Current latitude for live tracking
+  lng               Float?    // Current longitude for live tracking
+  recurring_end_date String?  // New Field: For ending recurrences on a specific date
+  actual_passengers Int?      // New Field: Logged at completion
+  notes             String?   @db.Text // New Field: Driver's notes
+  createdAt         DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  bookings        Booking[]
+
+  @@map("trip")
+}
+
+model TripRequest {
+  id              String   @id @default(cuid())
+  tenant_name     String
+  date            String
+  time            String
+  origin          String
+  destination     String
+  passengers      Int
+  status          String   @default("pending") // pending, approved, rejected
+  source          String   @default("tenant") // tenant, admin
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now())
+
+  @@map("triprequest")
+}
+
+model Booking {
+  id          String   @id @default(cuid())
+  trip_id     String
+  trip        Trip     @relation(fields: [trip_id], references: [id])
+  user_id     String
+  user        User     @relation(fields: [user_id], references: [id])
+  time        String
+  date        String
+  origin      String
+  destination String
+  seats       Int
+  status      String   @default("confirmed") // confirmed, cancelled
+  createdAt   DateTime @default(now())
+
+  @@map("booking")
+}
+
+model FuelLog {
+  id      String   @id @default(cuid())
+  date    String
+  vehicle String
+  gallons Float
+  amount  Float
+  odometer Float
+  createdAt DateTime @default(now())
+
+  @@map("fuellog")
+}
+
+model MaintenanceLog {
+  id          String   @id @default(cuid())
+  date        String
+  vehicle     String
+  description String
+  cost        Float
+  createdAt   DateTime @default(now())
+
+  @@map("maintenancelog")
+}
+
+model Destination {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  @@map("destination")
+}
