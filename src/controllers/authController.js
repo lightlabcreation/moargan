@@ -8,7 +8,7 @@ const { getAuthUser } = require('../utils/authUser');
 // @route   POST /api/auth/internal-create
 // @access  Private (Admin Only)
 const internalCreate = asyncHandler(async (req, res) => {
-  const { name, email, role } = req.body;
+  const { name, email, role ,phone } = req.body;
 
   const userExists = await prisma.user.findUnique({ where: { email } });
   if (userExists) {
@@ -23,7 +23,8 @@ const internalCreate = asyncHandler(async (req, res) => {
       role, // driver, admin
       source: 'INTERNAL',
       password_set: false,
-      invitation_sent: false
+      invitation_sent: false,
+      phone: phone || null
     }
   });
 
